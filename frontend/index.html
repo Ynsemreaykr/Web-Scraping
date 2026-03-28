@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Kocaeli Haber Haritası - Yerel haberleri Google Maps üzerinde takip edin" />
+  <title>Kocaeli Haber Haritası</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- ── Header ───────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">🗺️</span>
+        <div>
+          <h1 class="logo-title">Kocaeli Haber Haritası</h1>
+          <p class="logo-sub">Yerel haberleri canlı takip edin</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="stats-bar" id="statsBar">
+          <span class="stat-chip" id="statTotal">— haber</span>
+          <span class="stat-chip mapped" id="statMapped">— haritada</span>
+        </div>
+        <button class="btn-scrape" id="btnScrape" onclick="triggerScrape()">
+          <span class="btn-icon">⟳</span>
+          <span id="scrapeLabel">Haberleri Güncelle</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Ana Layout ────────────────────────────────────────────── -->
+  <main class="layout">
+
+    <!-- Sol Panel: Filtreler + Liste -->
+    <aside class="sidebar">
+      <!-- Filtreler -->
+      <section class="filter-section">
+        <h2 class="section-title">
+          <span>🔍</span> Filtreler
+        </h2>
+
+        <!-- Haber Türü -->
+        <div class="filter-group">
+          <label class="filter-label">Haber Türü</label>
+          <div class="category-chips" id="categoryChips">
+            <button class="chip active" data-category="" onclick="setCategory(this, '')">Tümü</button>
+          </div>
+        </div>
+
+        <!-- İlçe -->
+        <div class="filter-group">
+          <label class="filter-label" for="districtSelect">İlçe</label>
+          <select class="filter-select" id="districtSelect" onchange="applyFilters()">
+            <option value="">Tüm İlçeler</option>
+          </select>
+        </div>
+
+        <!-- Tarih Aralığı -->
+        <div class="filter-group">
+          <label class="filter-label">Tarih Aralığı</label>
+          <div class="date-row">
+            <input class="filter-input" type="date" id="dateFrom" onchange="applyFilters()" placeholder="Başlangıç" />
+            <span class="date-separator">—</span>
+            <input class="filter-input" type="date" id="dateTo" onchange="applyFilters()" placeholder="Bitiş" />
+          </div>
+        </div>
+
+        <!-- Sadece konumlu -->
+        <div class="filter-group">
+          <label class="toggle-label">
+            <input type="checkbox" id="onlyMapped" onchange="applyFilters()" />
+            <span class="toggle-slider"></span>
+            <span>Sadece haritada olanlar</span>
+          </label>
+        </div>
+
+        <button class="btn-reset" onclick="resetFilters()">Filtreleri Temizle</button>
+      </section>
+
+      <!-- Haber Listesi -->
+      <section class="news-list-section">
+        <div class="list-header">
+          <h2 class="section-title"><span>📰</span> Haberler</h2>
+          <span class="count-badge" id="newsCount">0</span>
+        </div>
+        <div class="news-list" id="newsList">
+          <div class="loading-placeholder">
+            <div class="spinner"></div>
+            <p>Haberler yükleniyor...</p>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <!-- Harita -->
+    <section class="map-container">
+      <div id="map"></div>
+      <div class="map-legend" id="mapLegend">
+        <div class="legend-title">Lejant</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Scraping Durum Bildirimi -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Scripts -->
+  <script src="js/app.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/filters.js"></script>
+  <!-- Google Maps API - key backend'den alınacak -->
+  <script id="gmapsLoader"></script>
+</body>
+</html>

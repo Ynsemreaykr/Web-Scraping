@@ -1,0 +1,321 @@
+/* ───────────────────────────────────────────────
+   Kocaeli Haber Harita - Ana Stil Dosyasi
+   Tasarim: Koyu tema, modern, premium gorunu
+─────────────────────────────────────────────── */
+
+/* 1. RESET & FONTS */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #0d1117;
+  color: #e6edf3;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 2. HEADER */
+.header {
+  background: linear-gradient(135deg, #161b22 0%, #1a2233 100%);
+  border-bottom: 1px solid #30363d;
+  padding: 0 1.5rem;
+  height: 62px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 16px rgba(0,0,0,.4);
+  z-index: 100;
+}
+.header-inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 100%;
+}
+.logo { display: flex; align-items: center; gap: .75rem; }
+.logo-icon { font-size: 1.8rem; }
+.logo-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #58a6ff, #79c0ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.logo-sub { font-size: .72rem; color: #8b949e; margin-top: 1px; }
+
+.header-actions { display: flex; align-items: center; gap: 1rem; }
+
+.stats-bar { display: flex; gap: .5rem; }
+.stat-chip {
+  padding: .25rem .75rem;
+  border-radius: 20px;
+  font-size: .75rem;
+  font-weight: 600;
+  background: #21262d;
+  border: 1px solid #30363d;
+  color: #8b949e;
+}
+.stat-chip.mapped { color: #3fb950; border-color: #238636; }
+
+.btn-scrape {
+  display: flex; align-items: center; gap: .4rem;
+  padding: .45rem 1.1rem;
+  background: linear-gradient(135deg, #1f6feb, #388bfd);
+  border: none; border-radius: 8px;
+  color: #fff; font-size: .8rem; font-weight: 600;
+  cursor: pointer; transition: all .2s;
+}
+.btn-scrape:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(56,139,253,.4); }
+.btn-scrape:active { transform: none; }
+.btn-scrape.loading .btn-icon { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 3. MAIN LAYOUT */
+.layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* 4. SIDEBAR */
+.sidebar {
+  width: 340px;
+  flex-shrink: 0;
+  background: #161b22;
+  border-right: 1px solid #30363d;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.filter-section {
+  padding: 1rem 1rem .75rem;
+  border-bottom: 1px solid #30363d;
+  flex-shrink: 0;
+}
+.section-title {
+  display: flex; align-items: center; gap: .4rem;
+  font-size: .8rem; font-weight: 700;
+  color: #8b949e; text-transform: uppercase;
+  letter-spacing: .06em; margin-bottom: .75rem;
+}
+.filter-group { margin-bottom: .75rem; }
+.filter-label {
+  display: block;
+  font-size: .72rem; font-weight: 600;
+  color: #8b949e; margin-bottom: .35rem;
+}
+
+/* Category chips */
+.category-chips {
+  display: flex; flex-wrap: wrap; gap: .35rem;
+}
+.chip {
+  padding: .2rem .65rem;
+  border-radius: 20px; border: 1px solid #30363d;
+  background: #21262d; color: #8b949e;
+  font-size: .72rem; font-weight: 500;
+  cursor: pointer; transition: all .15s;
+}
+.chip:hover { border-color: #58a6ff; color: #58a6ff; }
+.chip.active {
+  background: #1f6feb22; border-color: #1f6feb;
+  color: #58a6ff;
+}
+/* Category-specific chip colors */
+.chip[data-category="Trafik Kazasi"].active  { background:#da31311a; border-color:#da3131; color:#ff6b6b; }
+.chip[data-category="Yangin"].active          { background:#e8762b1a; border-color:#e8762b; color:#ffa94d; }
+.chip[data-category="Elektrik Kesintisi"].active { background:#d4b7001a; border-color:#d4b700; color:#ffd43b; }
+.chip[data-category="Hirsizlik"].active       { background:#5c6bc01a; border-color:#5c6bc0; color:#91a7ff; }
+.chip[data-category="Kulturel Etkinlikler"].active { background:#2e9e441a; border-color:#2e9e44; color:#69db7c; }
+
+/* Select & inputs */
+.filter-select, .filter-input {
+  width: 100%; padding: .4rem .6rem;
+  background: #21262d; border: 1px solid #30363d;
+  border-radius: 6px; color: #e6edf3;
+  font-size: .78rem; font-family: inherit;
+  transition: border-color .15s;
+}
+.filter-select:focus, .filter-input:focus {
+  outline: none; border-color: #58a6ff;
+}
+.date-row { display: flex; align-items: center; gap: .4rem; }
+.date-separator { color: #8b949e; font-size: .75rem; }
+.filter-input { flex: 1; }
+
+/* Toggle */
+.toggle-label {
+  display: flex; align-items: center; gap: .6rem;
+  cursor: pointer; font-size: .78rem;
+}
+.toggle-label input { display: none; }
+.toggle-slider {
+  width: 34px; height: 18px;
+  background: #30363d; border-radius: 9px;
+  position: relative; transition: background .2s; flex-shrink: 0;
+}
+.toggle-slider::after {
+  content: ''; position: absolute;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #8b949e; top: 3px; left: 3px;
+  transition: all .2s;
+}
+.toggle-label input:checked + .toggle-slider { background: #1f6feb; }
+.toggle-label input:checked + .toggle-slider::after { left: 19px; background: #fff; }
+
+.btn-reset {
+  width: 100%; padding: .4rem;
+  background: transparent; border: 1px solid #30363d;
+  border-radius: 6px; color: #8b949e;
+  font-size: .75rem; cursor: pointer; transition: all .15s; margin-top: .25rem;
+}
+.btn-reset:hover { border-color: #f85149; color: #f85149; }
+
+/* 5. NEWS LIST */
+.news-list-section {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+}
+.list-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .75rem 1rem .5rem;
+}
+.count-badge {
+  background: #21262d; border: 1px solid #30363d;
+  border-radius: 12px; padding: .1rem .55rem;
+  font-size: .72rem; color: #8b949e; font-weight: 600;
+}
+.news-list {
+  flex: 1; overflow-y: auto; padding: 0 .75rem .75rem;
+}
+.news-list::-webkit-scrollbar { width: 4px; }
+.news-list::-webkit-scrollbar-track { background: transparent; }
+.news-list::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+
+/* News Card */
+.news-card {
+  background: #21262d; border: 1px solid #30363d;
+  border-radius: 10px; padding: .75rem;
+  margin-bottom: .5rem; cursor: pointer;
+  transition: all .18s; position: relative; overflow: hidden;
+}
+.news-card::before {
+  content: ''; position: absolute;
+  left: 0; top: 0; bottom: 0; width: 3px;
+  border-radius: 3px 0 0 3px;
+}
+.news-card:hover { border-color: #58a6ff; transform: translateX(2px); }
+.news-card:hover::before { opacity: 1; }
+
+/* Category accent colors */
+.news-card[data-cat="Trafik Kazasi"]::before       { background: #da3131; }
+.news-card[data-cat="Yangin"]::before               { background: #e8762b; }
+.news-card[data-cat="Elektrik Kesintisi"]::before   { background: #d4b700; }
+.news-card[data-cat="Hirsizlik"]::before            { background: #5c6bc0; }
+.news-card[data-cat="Kulturel Etkinlikler"]::before { background: #2e9e44; }
+
+.card-meta {
+  display: flex; align-items: center; gap: .4rem;
+  margin-bottom: .35rem; flex-wrap: wrap;
+}
+.cat-badge {
+  font-size: .65rem; font-weight: 600; padding: .1rem .45rem;
+  border-radius: 10px; text-transform: uppercase; letter-spacing: .04em;
+}
+.cat-badge.Trafik-Kazasi       { background: #da31311a; color: #ff6b6b; }
+.cat-badge.Yangin               { background: #e8762b1a; color: #ffa94d; }
+.cat-badge.Elektrik-Kesintisi   { background: #d4b7001a; color: #ffd43b; }
+.cat-badge.Hirsizlik            { background: #5c6bc01a; color: #91a7ff; }
+.cat-badge.Kulturel-Etkinlikler { background: #2e9e441a; color: #69db7c; }
+
+.card-date { font-size: .65rem; color: #8b949e; margin-left: auto; }
+.card-title {
+  font-size: .82rem; font-weight: 600;
+  color: #e6edf3; line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
+}
+.card-source {
+  font-size: .68rem; color: #8b949e; margin-top: .3rem;
+  display: flex; align-items: center; gap: .3rem;
+}
+.card-loc-icon { font-size: .7rem; }
+.no-map-badge {
+  font-size: .6rem; color: #6e7681;
+  background: #21262d; border: 1px solid #30363d;
+  border-radius: 8px; padding: 0 .35rem;
+}
+
+/* Loading */
+.loading-placeholder {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: .75rem; padding: 2rem; color: #8b949e; font-size: .8rem;
+}
+.spinner {
+  width: 28px; height: 28px;
+  border: 3px solid #30363d;
+  border-top-color: #58a6ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+.empty-state {
+  text-align: center; padding: 2rem 1rem; color: #8b949e;
+}
+.empty-state .empty-icon { font-size: 2rem; margin-bottom: .5rem; }
+.empty-state p { font-size: .8rem; }
+
+/* 6. MAP */
+.map-container {
+  flex: 1; position: relative; overflow: hidden;
+}
+#map { width: 100%; height: 100%; }
+
+/* Map Legend */
+.map-legend {
+  position: absolute; bottom: 2rem; right: 1rem;
+  background: #161b22ee; border: 1px solid #30363d;
+  border-radius: 10px; padding: .75rem 1rem;
+  backdrop-filter: blur(8px);
+  min-width: 160px;
+}
+.legend-title {
+  font-size: .7rem; font-weight: 700;
+  color: #8b949e; text-transform: uppercase;
+  letter-spacing: .06em; margin-bottom: .5rem;
+}
+.legend-item {
+  display: flex; align-items: center; gap: .5rem;
+  margin-bottom: .3rem; font-size: .75rem; color: #e6edf3;
+}
+.legend-dot {
+  width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+}
+
+/* 7. TOAST */
+.toast {
+  position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+  background: #161b22; border: 1px solid #30363d;
+  border-radius: 10px; padding: .65rem 1.2rem;
+  font-size: .8rem; color: #e6edf3;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s; z-index: 9999;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; }
+.toast.success { border-color: #238636; color: #3fb950; }
+.toast.error   { border-color: #da3633; color: #f85149; }
+.toast.info    { border-color: #1f6feb; color: #58a6ff; }
+
+/* 8. INFO WINDOW (Google Maps) */
+.gm-infowindow-content .iw-wrap {
+  font-family: 'Inter', sans-serif;
+  background: #161b22;
+  border-radius: 8px;
+  padding: 0;
+  min-width: 220px;
+  max-width: 280px;
+}
