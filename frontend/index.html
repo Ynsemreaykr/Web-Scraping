@@ -33,6 +33,9 @@
     </div>
   </header>
 
+  <!-- ── Kaynak İstatistikleri ──────────────────────────────────── -->
+  <div class="source-stats-bar" id="sourceStatsBar"></div>
+
   <!-- ── Ana Layout ────────────────────────────────────────────── -->
   <main class="layout">
 
@@ -79,6 +82,15 @@
           </label>
         </div>
 
+        <!-- Sadece Coklu Kaynak -->
+        <div class="filter-group">
+          <label class="toggle-label" title="%90 benzerlikle farklı sitelerde yayımlanan kopya haberler">
+            <input type="checkbox" id="onlyMultiSource" onchange="applyFilters()" />
+            <span class="toggle-slider"></span>
+            <span>Sadece Çoklu Kaynak Haberler</span>
+          </label>
+        </div>
+
         <button class="btn-reset" onclick="resetFilters()">Filtreleri Temizle</button>
       </section>
 
@@ -102,6 +114,11 @@
       <div id="map"></div>
       <div class="map-legend" id="mapLegend">
         <div class="legend-title">Lejant</div>
+      </div>
+      <!-- Haber Özet Paneli -->
+      <div class="news-detail-panel" id="newsDetailPanel">
+        <button class="detail-close" id="detailClose" onclick="closeDetailPanel()">&times;</button>
+        <div id="detailContent"></div>
       </div>
     </section>
   </main>

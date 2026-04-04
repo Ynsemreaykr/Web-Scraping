@@ -1,0 +1,18 @@
+---
+description: Backend veya ilgili kod değişince sunucuları yeniden başlat
+alwaysApply: true
+---
+
+# Proje yeniden başlatma (son adım)
+
+Bu repoda **Python backend** (`backend/`) veya **frontend** (`frontend/js`, `frontend/index.html`) dosyalarında değişiklik yaptıktan sonra, aynı görevin **son adımı** olarak:
+
+1. **5000** ve **8080** portlarında dinleyen süreçleri kapat (Windows PowerShell’de `Get-NetTCPConnection` + `Stop-Process`; `$pid` kullanma, döngü değişkeni `$procId` olsun).
+2. Arka planda başlat:
+   - `Set-Location ...\backend; python app.py` → Flask **5000**
+   - `Set-Location ...\frontend; python -m http.server 8080` → statik **8080**
+3. Kısa bekleme sonrası `http://127.0.0.1:5000/api/health` ve `http://127.0.0.1:8080/` ile doğrula.
+
+**Not:** PowerShell’de `&&` kullanma; `Set-Location ...; python ...` kullan.
+
+Kullanıcıya “kodu yeniden başlattım” diye özetle; URL’leri ver.

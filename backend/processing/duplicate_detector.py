@@ -1,6 +1,6 @@
 import numpy as np
 import logging
-from typing import Optional, List
+from typing import Optional, List, Any
 from config import Config
 
 logger = logging.getLogger(__name__)
@@ -12,7 +12,7 @@ def get_model():
     if _model is None:
         from sentence_transformers import SentenceTransformer
         logger.info("SentenceTransformer modeli yukleniyor...")
-        _model = SentenceTransformer("all-MiniLM-L6-v2")
+        _model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
         logger.info("Model yuklendi.")
     return _model
 
@@ -37,16 +37,21 @@ class DuplicateDetector:
         emb = model.encode(text, normalize_embeddings=True)
         return emb.tolist()
 
-    def find_duplicate(self, new_embedding: list, existing_docs: list) -> Optional[dict]:
+    def find_duplicate(
+        self,
+        new_embedding: list,
+        existing_docs: List[Any],
+        *,
+        category: Optional[str] = None,
+    ) -> Optional[dict]:
         """
-        Yeni haberin embedding'ini mevcut haberlerle karsilastir.
-        En yakin eslesmeyj dondurur (>= esik ise).
-
-        Returns:
-            Eslesen belge veya None
+        En yuksek kosinus benzerligi; genel esik veya ayni kategoride biraz daha dusuk esik.
         """
-        threshold = Config.SIMILARITY_THRESHOLD
-        best_score = -1
+        strict = float(Config.SIMILARITY_THRESHOLD)
+        relaxed = float(
+            getattr(Config, "SIMILARITY_THRESHOLD_SAME_CATEGORY", strict)
+        )
+        best_score = -1.0
         best_doc = None
 
         for doc in existing_docs:
@@ -57,8 +62,22 @@ class DuplicateDetector:
                 best_score = score
                 best_doc = doc
 
-        if best_score >= threshold:
-            logger.info(f"Duplicate bulundu: benzerlik={best_score:.3f}")
+        if best_doc is None:
+            return None
+
+        if best_score >= strict:
+            logger.info("Duplicate bulundu: benzerlik=%.3f (genel esik)", best_score)
+            return best_doc
+
+        if (
+            category
+            and best_doc.get("category") == category
+            and best_score >= relaxed
+        ):
+            logger.info(
+                "Duplicate bulundu: benzerlik=%.3f (aynı kategori gevsek esik)",
+                best_score,
+            )
             return best_doc
 
         return None

@@ -13,6 +13,7 @@ const state = {
   dateFrom: '',
   dateTo: '',
   onlyMapped: false,
+  onlyMultiSource: false,
   mapReady: false,
 };
 
@@ -22,6 +23,7 @@ const CATEGORY_COLORS = {
   'Yangin':               { color: '#e8762b', icon: '🔥', label: 'Yangın' },
   'Elektrik Kesintisi':   { color: '#d4b700', icon: '⚡', label: 'Elektrik Kesintisi' },
   'Hirsizlik':            { color: '#5c6bc0', icon: '🔒', label: 'Hırsızlık' },
+  'Suc ve Cinayet':       { color: '#9c27b0', icon: '⚖️', label: 'Suç ve Cinayet' },
   'Kulturel Etkinlikler': { color: '#2e9e44', icon: '🎭', label: 'Kültürel Etkinlikler' },
 };
 
@@ -42,6 +44,14 @@ async function initApp() {
 
     // İstatistikleri al
     loadStats();
+
+    // Varsayilan tarih: son 3 gun
+    const d = new Date();
+    d.setDate(d.getDate() - 3);
+    const defaultFrom = d.toISOString().slice(0, 10);
+    state.dateFrom = defaultFrom;
+    const dateFromEl = document.getElementById('dateFrom');
+    if (dateFromEl) dateFromEl.value = defaultFrom;
 
     // Haberleri yükle
     await loadNews();
@@ -72,7 +82,13 @@ async function loadNews() {
 
     const data = await fetchJSON(`${API_BASE}/news?${params}`);
     state.allNews = data.data || [];
-    state.filtered = state.allNews;
+    
+    // UI lokal filtre: Sadece Duplicate (Çoklu Kaynak) Habere sahip olanlari listele
+    if (state.onlyMultiSource) {
+      state.filtered = state.allNews.filter(n => n.sources && n.sources.length > 1);
+    } else {
+      state.filtered = state.allNews;
+    }
 
     renderNewsList(state.filtered);
     if (state.mapReady) {
@@ -92,6 +108,7 @@ function applyFilters() {
   state.dateFrom   = document.getElementById('dateFrom').value;
   state.dateTo     = document.getElementById('dateTo').value;
   state.onlyMapped = document.getElementById('onlyMapped').checked;
+  state.onlyMultiSource = document.getElementById('onlyMultiSource').checked;
   loadNews();
 }
 
@@ -112,6 +129,10 @@ function resetFilters() {
   document.getElementById('dateFrom').value = '';
   document.getElementById('dateTo').value = '';
   document.getElementById('onlyMapped').checked = false;
+  
+  const multisrc = document.getElementById('onlyMultiSource');
+  if (multisrc) multisrc.checked = false;
+  state.onlyMultiSource = false;
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   document.querySelector('.chip[data-category=""]').classList.add('active');
   loadNews();
@@ -175,6 +196,19 @@ async function loadStats() {
     const data = await fetchJSON(`${API_BASE}/stats`);
     document.getElementById('statTotal').textContent  = `${data.data.total} haber`;
     document.getElementById('statMapped').textContent = `${data.data.mapped} haritada`;
+
+    const bar = document.getElementById('sourceStatsBar');
+    const bySource = data.data.by_source || {};
+    const entries = Object.entries(bySource).sort((a, b) => b[1] - a[1]);
+    if (entries.length) {
+      bar.innerHTML =
+        '<span class="source-stats-label">Kaynaklara Göre:</span>' +
+        entries.map(([name, count]) =>
+          `<span class="source-stat">${escHtml(name)} <span class="src-count">${count}</span></span>`
+        ).join('');
+    } else {
+      bar.innerHTML = '';
+    }
   } catch (err) {}
 }
 
@@ -186,7 +220,7 @@ async function triggerScrape() {
 
   btn.classList.add('loading');
   label.textContent = 'Kazınıyor...';
-  showToast('Scraping başlatıldı. Bu birkaç dakika sürebilir...', 'info');
+  showToast('Veritabanı temizleniyor ve haberler yeniden kazınıyor...', 'info');
 
   try {
     await fetchJSON(`${API_BASE}/scrape`, {
@@ -199,28 +233,53 @@ async function triggerScrape() {
   } catch (err) {
     btn.classList.remove('loading');
     label.textContent = 'Haberleri Güncelle';
-    showToast('Scraping başlatılamadı.', 'error');
+    showToast(err.message || 'Scraping başlatılamadı.', 'error');
   }
 }
 
 function pollScrapeStatus() {
+  const label = document.getElementById('scrapeLabel');
+  const btn = document.getElementById('btnScrape');
+  const maxTicks = 800;
+  let ticks = 0;
   const interval = setInterval(async () => {
+    ticks += 1;
     try {
       const data = await fetchJSON(`${API_BASE}/scrape/status`);
+      const prog = data.data.progress || {};
+      if (prog.message && label) {
+        const short = prog.message.length > 52 ? prog.message.slice(0, 50) + '…' : prog.message;
+        label.textContent = short;
+      }
       if (!data.data.running) {
         clearInterval(interval);
-        const btn = document.getElementById('btnScrape');
-        const label = document.getElementById('scrapeLabel');
         btn.classList.remove('loading');
         label.textContent = 'Haberleri Güncelle';
         const stats = data.data.last_stats || {};
-        showToast(`✅ Tamamlandı! ${stats.saved || 0} yeni haber kaydedildi.`, 'success');
+        if (stats.error) {
+          showToast(`Scraping hata: ${stats.error}`, 'error');
+        } else {
+          const m = stats.db_merged != null ? `, ${stats.db_merged} çift kayıt birleştirildi` : '';
+          showToast(`Tamamlandı. ${stats.saved ?? 0} yeni kayıt, ${stats.duplicate ?? 0} anında birleşen${m}.`, 'success');
+        }
         await loadNews();
+      } else if (ticks >= maxTicks) {
+        clearInterval(interval);
+        btn.classList.remove('loading');
+        label.textContent = 'Haberleri Güncelle';
+        showToast(
+          'Çok uzun sürdü veya sunucu yanıt vermiyor. Flask konsoluna bakın; işlem arka planda sürebilir.',
+          'error'
+        );
       }
     } catch (err) {
       clearInterval(interval);
+      btn.classList.remove('loading');
+      if (label) label.textContent = 'Haberleri Güncelle';
+      showToast('Durum alınamadı. Backend çalışıyor mu?', 'error');
+      console.error(err);
     }
-  }, 3000);
+  }, 2500);
 }
 
 // ── Haber Listesi Render ──────────────────────────────────────
@@ -240,13 +299,43 @@ function renderNewsList(newsList) {
 
   container.innerHTML = newsList.map(n => {
     const cat = n.category || '';
-    const catInfo = CATEGORY_COLORS[cat] || { icon: '📰', label: cat };
+    const catInfo = CATEGORY_COLORS[cat] || { icon: '📰', label: cat || 'Haber' };
     const hasLoc = n.location && n.location.lat;
+    const locHint = hasLoc ? 'Haritada gösteriliyor' : 'Konum yok / haritada yok';
     const dateStr = n.published_at ? new Date(n.published_at).toLocaleDateString('tr-TR') : '—';
     const catClass = cat.replace(/\s+/g, '-');
-    const source = (n.sources && n.sources[0]) ? n.sources[0].source_name : (n.source_name || '');
-    // Tum kaynaklar
-    const allSources = n.sources ? n.sources.map(s => s.source_name).join(', ') : source;
+    // Ayni haber: tum sitelerin linkleri (URL bazli tekil; farkli sitelerin hepsi gorunsun)
+    const seenUrls = new Set();
+    const seenSourceNames = new Set();
+    const linkRows = [];
+    if (Array.isArray(n.sources)) {
+      for (const s of n.sources) {
+        const u = (s && s.url) ? String(s.url).trim() : '';
+        const name = (s && s.source_name) ? s.source_name : 'Kaynak';
+        if (!u || seenUrls.has(u) || seenSourceNames.has(name)) continue;
+        seenUrls.add(u);
+        seenSourceNames.add(name);
+        linkRows.push({ url: u, name });
+      }
+    }
+    const mainU = (n.url || '').trim();
+    if (mainU && !seenUrls.has(mainU)) {
+      const nm = (n.sources && n.sources[0] && n.sources[0].source_name) ? n.sources[0].source_name : 'Haber';
+      if (!seenSourceNames.has(nm)) {
+        seenUrls.add(mainU);
+        seenSourceNames.add(nm);
+        linkRows.unshift({ url: mainU, name: nm });
+      }
+    }
+    const srcCount = linkRows.length;
+    const multiBadge = srcCount > 1
+      ? `<span style="font-size:0.7rem;margin-left:6px;padding:2px 6px;border-radius:4px;background:#238636;color:#fff;">${srcCount} kaynak</span>`
+      : '';
+    let multiLinksHTML = linkRows.length
+      ? linkRows.map(s =>
+          `<a href="${encodeURI(s.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="font-size:0.75rem; color:#58a6ff; text-decoration:none; margin-right:8px; display:inline-block; margin-top:5px; border:1px solid #30363d; padding:2px 6px; border-radius:4px; background:#21262d;">${escHtml(s.name)} ↗</a>`
+        ).join(' ')
+      : '';
 
     return `
       <div class="news-card" data-cat="${cat}" data-id="${n._id}"
@@ -255,11 +344,13 @@ function renderNewsList(newsList) {
           <span class="cat-badge ${catClass}">${catInfo.icon} ${catInfo.label}</span>
           <span class="card-date">${dateStr}</span>
         </div>
-        <div class="card-title">${escHtml(n.title)}</div>
-        <div class="card-source">
+        <div class="card-title">${escHtml(n.title)}${multiBadge}</div>
+        <div class="card-source" style="margin-bottom: 2px;">
           <span class="card-loc-icon">${hasLoc ? '📍' : '📌'}</span>
-          <span>${escHtml(allSources)}</span>
-          ${!hasLoc ? '<span class="no-map-badge">Haritasız</span>' : ''}
+          <span style="font-size: 0.8rem; color: #8b949e;">${locHint}</span>
+        </div>
+        <div class="card-links" style="border-top: 1px solid #30363d; padding-top: 4px;">
+          ${multiLinksHTML}
         </div>
       </div>`;
   }).join('');
@@ -271,6 +362,54 @@ function onCardClick(id, lat, lng) {
   if (lat && lng && state.mapReady) {
     panToMarker(id, lat, lng);
   }
+  const news = state.allNews.find(n => n._id === id);
+  if (news) openDetailPanel(news);
+}
+
+function openDetailPanel(news) {
+  const panel = document.getElementById('newsDetailPanel');
+  const container = document.getElementById('detailContent');
+  const cat = news.category || '';
+  const catInfo = CATEGORY_COLORS[cat] || { color: '#8b949e', icon: '📰', label: cat || 'Haber' };
+  const dateStr = news.published_at
+    ? new Date(news.published_at).toLocaleDateString('tr-TR', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' })
+    : '';
+  const locText = (news.location && news.location.text) ? news.location.text : '';
+  const summary = news.summary || '';
+
+  const sourceLinks = (news.sources || []).map(s =>
+    `<a href="${encodeURI(s.url)}" target="_blank" rel="noopener" class="detail-source-link" onclick="event.stopPropagation()">${escHtml(s.source_name)} ↗</a>`
+  ).join('');
+
+  const mainUrl = (news.sources && news.sources.length) ? news.sources[0].url : (news.url || '#');
+
+  container.innerHTML = `
+    <div class="detail-cat-badge" style="background:${catInfo.color}22;color:${catInfo.color};border:1px solid ${catInfo.color}44;">
+      ${catInfo.icon} ${catInfo.label}
+    </div>
+    <div class="detail-title">${escHtml(news.title)}</div>
+    ${dateStr ? `<div class="detail-meta">📅 ${dateStr}</div>` : ''}
+    ${locText ? `<div class="detail-meta">📍 ${escHtml(locText)}</div>` : ''}
+    
+    ${summary ? `
+      <div class="detail-summary">
+        <div class="detail-summary-label">Haber Özeti</div>
+        ${escHtml(summary)}
+      </div>` : `
+      <div class="detail-summary" style="color:#6e7681;font-size:.82rem;padding:10px 12px;background:#161b2288;border-radius:8px;border-left:3px solid #30363d;">
+        Bu haberin özeti oluşturulamadı. Detaylar için aşağıdaki kaynağa göz atın.
+      </div>`}
+    <div class="detail-sources">
+      <div class="detail-summary-label" style="margin-bottom:.3rem;">Kaynaklar</div>
+      ${sourceLinks}
+    </div>
+    <a href="${encodeURI(mainUrl)}" target="_blank" rel="noopener" class="detail-go-btn">Haberin Tamamını Oku →</a>
+  `;
+  panel.classList.add('open');
+}
+
+function closeDetailPanel() {
+  document.getElementById('newsDetailPanel').classList.remove('open');
 }
 
 // ── Yardımcılar ───────────────────────────────────────────────

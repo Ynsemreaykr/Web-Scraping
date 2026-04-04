@@ -1,0 +1,38 @@
+flowchart TB
+    subgraph IST["İstemci"]
+        direction TB
+        U([Kullanıcı])
+        FE[Web arayüzü · HTML · CSS · JavaScript]
+        MAP[Harita · Google Maps JavaScript API]
+    end
+
+    subgraph SUN["Sunucu (Python)"]
+        direction TB
+        API[Flask · REST · JSON]
+        subgraph BH["Boru hattı"]
+            direction LR
+            S1[/"Kazıma<br/>5 kaynak"/]
+            S2["Temizleme<br/>+ sınıflandırma"]
+            S3["Konum<br/>+ tekrar tespiti"]
+            S4["Geocoding<br/>+ özet"]
+            S1 --> S2 --> S3 --> S4
+        end
+    end
+
+    subgraph DIS["Veri ve harici servis"]
+        direction TB
+        DB[(MongoDB)]
+        GEO[Google Geocoding API]
+    end
+
+    U --> FE
+    FE --> MAP
+    FE <-->|HTTP · JSON| API
+    API --> S1
+    S4 --> DB
+    S4 --> GEO
+
+    style IST fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style SUN fill:#e8eaf6,stroke:#3949ab,stroke-width:2px
+    style DIS fill:#e0f2f1,stroke:#00695c,stroke-width:2px
+    style BH fill:#ffffff,stroke:#5c6bc0,stroke-dasharray: 5 5

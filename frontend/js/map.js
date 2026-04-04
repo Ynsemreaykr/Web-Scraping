@@ -4,7 +4,7 @@
 
 let map = null;
 let markers = {};         // { newsId: google.maps.Marker }
-let activeInfoWindow = null;
+let activeInfoWindow = null; // kept for cleanup only
 
 // ── Google Maps'i Yükle ───────────────────────────────────────
 function loadGoogleMaps(apiKey) {
@@ -66,15 +66,10 @@ function renderMarkers(newsList) {
       animation: google.maps.Animation.DROP,
     });
 
-    // InfoWindow içeriği
-    const iw = buildInfoWindow(news, info);
-
     marker.addListener('click', () => {
-      if (activeInfoWindow) activeInfoWindow.close();
-      iw.open({ anchor: marker, map });
-      activeInfoWindow = iw;
-      // Hafif zoom & pan
       map.panTo(pos);
+      map.setZoom(14);
+      openDetailPanel(news);
     });
 
     markers[news._id] = marker;
@@ -149,6 +144,7 @@ function buildInfoWindow(news, catInfo) {
       ${news.location && news.location.text
         ? `<div style="font-size:.68rem;color:#8b949e;margin-bottom:10px;">📍 ${escHtml(news.location.text)}</div>`
         : ''}
+      
       <a href="${allSourceUrls}" target="_blank" rel="noopener" style="
         display:block;text-align:center;
         background:linear-gradient(135deg,#1f6feb,#388bfd);
@@ -173,8 +169,6 @@ function panToMarker(id, lat, lng) {
   if (!map) return;
   map.panTo({ lat, lng });
   map.setZoom(14);
-  const m = markers[id];
-  if (m) google.maps.event.trigger(m, 'click');
 }
 
 // ── Koyu Harita Stili ─────────────────────────────────────────

@@ -1,5 +1,6 @@
 import re
 import logging
+import unicodedata
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,8 @@ class TextCleaner:
     def clean(self, text: str) -> str:
         if not text:
             return ""
+
+        text = unicodedata.normalize("NFKC", text)
 
         # HTML tag temizligi
         text = self._remove_html_tags(text)
@@ -69,7 +72,10 @@ class TextCleaner:
         )
         for line in lines:
             stripped = line.strip()
-            if stripped and not pattern.search(stripped):
+            if stripped:
+                # Eger satir 200 karakterden kucukse reklam/sosyal medya linki olma ihtimali yuksektir. Uzun ve paragraf ise kaldirma.
+                if len(stripped) <= 200 and pattern.search(stripped):
+                    continue
                 cleaned.append(stripped)
         return "\n".join(cleaned)
 
